@@ -57,7 +57,22 @@ It is not published yet, so you will need to follow the steps below:
 - Then, you can import it in your project using `npm link fetch-progress`
 
 Or, use the published package on Github, for instance:
-- https://github.com/isirode/fetch-progress/releases/download/1.3.14/fetch-progress-1.3.14.tgz
+- In the dependencies field of the package.json of your project, put, for the version 1.0.0:
+  - "fetch-progress": "https://github.com/isirode/fetch-progress/releases/download/1.0.0/fetch-progress-1.0.0.tgz"
+
+So that it looks like this:
+
+```json
+{
+  ...
+  "dependencies": {
+    ...
+    "fetch-progress": "https://github.com/isirode/fetch-progress/releases/download/1.0.0/fetch-progress-1.0.0.tgz",
+    ...
+  }
+  ...
+}
+```
 
 ### Dependencies
 
