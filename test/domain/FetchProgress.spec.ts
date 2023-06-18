@@ -1,11 +1,36 @@
 import Emittery from "emittery";
 import { Events, FetchProgress } from "../../src/domain/FetchProgress";
 import { expect } from 'chai';
+import { browser, $, $$, expect as wdioExpect } from '@wdio/globals';
+import { ConsoleAppender, IConfiguration, ILogger, Level, LogManager, LoggerFactory, PupaLayout } from "log4j2-typescript";
 
 const filename = 'https://word-guessing.isirode.ovh/grammalecte/db-fra-grammalecte-1.0.0.db';
 
+// Info : you will need to display the verbose logs in the browser's debugger if you want to see the FetchProgress's logs
+// Since they are of debug level
+const logConfiguration: IConfiguration = {
+  appenders: [
+    new ConsoleAppender("console", new PupaLayout("{loggerName} {level} {time} {message}"))
+  ],
+  loggers: [
+    {
+      name: "com.isirode.",
+      level: Level.DEBUG,
+      refs: [
+        {
+          ref: "console"
+        },
+      ]
+    }
+  ]
+}
+
+const logManager: LogManager = new LogManager(logConfiguration);
+
 describe('FetchProgress', () => {
   describe('fetch', () => {
+
+    const logger: ILogger = LoggerFactory.getLogger('com.isirode.fetch-progress.test');
 
     let lastProgressPerCent: number = 0;
 
@@ -17,7 +42,7 @@ describe('FetchProgress', () => {
       }
       const progressInPerCent = currentProgress / contentLength * 100;
       if (progressInPerCent >= lastProgressPerCent + 10) {
-        console.log(progressInPerCent.toFixed() + ' %');
+        logger.info(progressInPerCent.toFixed() + ' %');
         lastProgressPerCent += 10;
       }
     });
@@ -25,6 +50,8 @@ describe('FetchProgress', () => {
     it('should fetch the file', async () => {
       // given
       const expectedFileSize = 80740352;
+
+      // await browser.debug();
 
       // when
       try {
@@ -34,8 +61,8 @@ describe('FetchProgress', () => {
         // then
         expect(arrayFile.length).to.be.equal(expectedFileSize);
       } catch (err: unknown) {
-        console.log('an error occurred in the browser', err);
-        // browser.debug();
+        logger.error('an error occurred in the browser', {}, err as Error);
+        // await browser.debug();
         throw err;
       }
     });
@@ -57,8 +84,8 @@ describe('FetchProgress', () => {
         // then
         expect(arrayFile.length).to.be.greaterThanOrEqual(1);
       } catch (err: unknown) {
-        console.log('an error occurred in the browser', err);
-        // browser.debug();
+        logger.error('an error occurred in the browser', {}, err as Error);
+        // await browser.debug();
         throw err;
       }
     });
@@ -87,8 +114,8 @@ describe('FetchProgress', () => {
         expect(onDoneData).to.not.be.equal(undefined);
         expect(onDoneDataLength).to.be.equal(expectedFileSize);
       } catch (err: unknown) {
-        console.log('an error occurred in the browser', err);
-        // browser.debug();
+        logger.error('an error occurred in the browser', {}, err as Error);
+        // await browser.debug();
         throw err;
       }
     });

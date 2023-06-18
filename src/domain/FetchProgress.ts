@@ -1,4 +1,5 @@
 import Emittery from "emittery";
+import { ILogger, LoggerFactory } from "log4j2-typescript";
 
 const contentLengthKey = 'content-length';
 
@@ -32,6 +33,8 @@ export interface Events {
 
 export class FetchProgress {
 
+  logger: ILogger = LoggerFactory.getLogger('com.isirode.fetch-progress');
+
   events?: Emittery<Events>;
 
   constructor(events?: Emittery<Events>) {
@@ -39,7 +42,7 @@ export class FetchProgress {
   }
 
   async fetch(input: RequestInfo | URL, init?: RequestInit | undefined): Promise<Uint8Array> {
-    console.log('fetch', input);
+    this.logger.debug('fetch', {input});
     let uint8Array: Uint8Array | null = null;
     let response: Response;
     try {
@@ -58,11 +61,15 @@ export class FetchProgress {
       throw new Error('body of response is null');
     }
     
-    console.log(`status: ${response.status} ${response.statusText}`);
-    console.log('Headers : ' + JSON.stringify(response.headers));
-    console.log(...response.headers);
+    this.logger.debug(`status: ${response.status} ${response.statusText}`);
+    // not working
+    // this.logger.debug(`Headers : ${JSON.stringify(response.headers)}`);
+    // not working
+    // this.logger.debug(`Headers : `, {...response.headers});
+    // not working
+    // this.logger.debug(`Headers : ${JSON.stringify({...response.headers})}`);
     response.headers.forEach((value, key) => {
-      console.log(key + ':' + value);
+      this.logger.debug(key + ':' + value);
     });
     // Not all headers are log
     // It needs CORS authorization
