@@ -18,6 +18,11 @@
   "license": "SEE LICENSE IN COPYING",
   "source": "src/index.ts",
   "types": "dist/types.d.ts",
+  "files": [
+    "dist/*.js",
+    "dist/*.map",
+    "src/"
+  ],
   "devDependencies": {
     "@parcel/packager-ts": "2.8.3",
     "@parcel/transformer-typescript-tsc": "2.8.3",

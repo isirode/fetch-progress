@@ -32,10 +32,10 @@ describe('FetchProgress', () => {
 
     const logger: ILogger = LoggerFactory.getLogger('com.isirode.fetch-progress.test');
 
-    let lastProgressPerCent: number = 0;
-
     const events = new Emittery<Events>();
 
+    // TODO : include it in the project
+    let lastProgressPerCent: number = 0;
     events.on('onProgress', ({contentLength, currentData, currentProgress, lastChunk}) => {
       if (contentLength === null) {
         return;
