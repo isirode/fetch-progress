@@ -4,7 +4,8 @@ import { expect } from 'chai';
 import { browser, $, $$, expect as wdioExpect } from '@wdio/globals';
 import { ConsoleAppender, IConfiguration, ILogger, Level, LogManager, LoggerFactory, PupaLayout } from "log4j2-typescript";
 
-const filename = 'https://word-guessing.isirode.ovh/grammalecte/db-fra-grammalecte-1.0.0.db';
+// const filename = 'https://word-guessing.isirode.ovh/grammalecte/db-fra-grammalecte-1.0.0.db';
+const filename = 'https://static.isirode.ovh/public/word-guessing/dictionaries/grammalecte/db-fra-grammalecte-1.0.0.db';
 
 // Info : you will need to display the verbose logs in the browser's debugger if you want to see the FetchProgress's logs
 // Since they are of debug level
@@ -56,13 +57,13 @@ describe('FetchProgress', () => {
       // when
       try {
         const fetchProgress: FetchProgress = new FetchProgress(events);
-        const arrayFile = await fetchProgress.fetch(filename);
+        const fetchResponse = await fetchProgress.fetch(filename);
 
         // then
-        expect(arrayFile.length).to.be.equal(expectedFileSize);
+        expect(fetchResponse.data!.length).to.be.equal(expectedFileSize);
       } catch (err: unknown) {
         logger.error('an error occurred in the browser', {}, err as Error);
-        // await browser.debug();
+        await browser.debug();
         throw err;
       }
     });
@@ -79,13 +80,13 @@ describe('FetchProgress', () => {
       // when
       try {
         const fetchProgress: FetchProgress = new FetchProgress(events);
-        const arrayFile = await fetchProgress.fetch(filename);
+        const fetchResponse = await fetchProgress.fetch(filename);
 
         // then
-        expect(arrayFile.length).to.be.greaterThanOrEqual(1);
+        expect(fetchResponse.data!.length).to.be.greaterThanOrEqual(1);
       } catch (err: unknown) {
         logger.error('an error occurred in the browser', {}, err as Error);
-        // await browser.debug();
+        await browser.debug();
         throw err;
       }
     });
@@ -98,16 +99,16 @@ describe('FetchProgress', () => {
       let onDoneData: Uint8Array | undefined = undefined;
       let onDoneDataLength = 0;
 
-      events.on('onDone', ({data}) => {
+      events.on('onDone', ({response}) => {
         onDoneCallCount += 1;
-        onDoneData = data;
-        onDoneDataLength = data.length;
+        onDoneData = response.data;
+        onDoneDataLength = response.data!.length;
       });
 
       // when
       try {
         const fetchProgress: FetchProgress = new FetchProgress(events);
-        const arrayFile = await fetchProgress.fetch(filename);
+        const fetchResponse = await fetchProgress.fetch(filename);
 
         // then
         expect(onDoneCallCount).to.be.equal(1);
@@ -115,7 +116,7 @@ describe('FetchProgress', () => {
         expect(onDoneDataLength).to.be.equal(expectedFileSize);
       } catch (err: unknown) {
         logger.error('an error occurred in the browser', {}, err as Error);
-        // await browser.debug();
+        await browser.debug();
         throw err;
       }
     });

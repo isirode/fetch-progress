@@ -3,20 +3,64 @@ import { ILogger, LoggerFactory } from "log4j2-typescript";
 
 const contentLengthKey = 'content-length';
 
-export interface OnProgressData {
+export type RequiredFiltered<T, U extends keyof T> = Omit<T, U> & Required<Pick<T, U>>;
+
+export interface FetchProgressData {
+  input: RequestInfo | URL;
+  init?: RequestInit | undefined;
+}
+
+export interface OnProgressData extends FetchProgressData {
   contentLength: number | null;
   currentProgress: number;
   lastChunk: Uint8Array;
   currentData: Uint8Array;
 }
 
-export interface OnDoneData {
-  data: Uint8Array;
+export interface OnErrorData extends FetchProgressData {
+  error: Error;
+}
+
+export interface OnDoneData extends FetchProgressData {
+  response: IFetchResponse;
 }
 
 export interface Events {
   onProgress: OnProgressData;
+  onError: OnErrorData;
   onDone: OnDoneData;
+}
+
+export interface IFetchResponse {
+  status: number;
+  statusText: string;
+  data: Uint8Array | undefined;
+  headers?: Map<string, string>;
+}
+
+export class FetchResponse implements IFetchResponse {
+
+  get status(): number {
+    return this.response.status;
+  }
+
+  get statusText(): string {
+    return this.response.statusText;
+  }
+
+  data: Uint8Array | undefined;
+  headers?: Map<string, string> = new Map();
+
+  response: Response;
+
+  constructor(response: Response) {
+    this.response = response;
+    const self = this;
+    response.headers.forEach((value, key) => {
+      self.headers?.set(key, value);
+    });
+  }
+
 }
 
 // TODO : cancellation
@@ -41,7 +85,7 @@ export class FetchProgress {
     this.events = events;
   }
 
-  async fetch(input: RequestInfo | URL, init?: RequestInit | undefined): Promise<Uint8Array> {
+  async fetch(input: RequestInfo | URL, init?: RequestInit | undefined): Promise<IFetchResponse> {
     this.logger.debug('fetch', {input});
     let uint8Array: Uint8Array | null = null;
     let response: Response;
@@ -50,15 +94,32 @@ export class FetchProgress {
     } catch (err: unknown) {
       // Info : throw {} when there is a CORS issue, or other kind of issue related to HTTP
       // The error will be in the browser but is not available here, or available to WebDriverIO
-      console.log('an http error occurred');
-      console.error('an error occurred', err);
+      // It can be a 404 that failed before the actual request is made
+      this.logger.error('a http error occurred', {}, err as Error);
+      this.events?.emit('onError', {
+        input: input,
+        init: init,
+        error: err as Error
+      });
       throw err;
     }
     if (response === null) {
-      throw new Error('response is null');
+      const error = new Error('fetch response is null');
+      this.events?.emit('onError', {
+        input: input,
+        init: init,
+        error: error
+      });
+      throw error;
     }
     if (response.body === null) {
-      throw new Error('body of response is null');
+      const error = new Error('fetch response body is null');
+      this.events?.emit('onError', {
+        input: input,
+        init: init,
+        error: error
+      });
+      throw error;
     }
     
     this.logger.debug(`status: ${response.status} ${response.statusText}`);
@@ -91,26 +152,46 @@ export class FetchProgress {
     const contentLength = response.headers.get(contentLengthKey);
     if (contentLength != null) {
       const contentLengthInt = parseInt(contentLength, 10);
-      uint8Array = await this.getResponseContentWithKnownContentLength(response, contentLengthInt);
+      uint8Array = await this.getResponseContentWithKnownContentLength(response, contentLengthInt, input, init);
     } else {
-      uint8Array = await this.getResponseContentWithUnknownContentLength(response);
+      uint8Array = await this.getResponseContentWithUnknownContentLength(response, input, init);
     }
 
     // TODO : fix this, should not be null
     if (uint8Array === null) {
-      throw new Error("array is null at the end of the fetch");
+      const error = new Error("data is null after fetch");
+      this.events?.emit('onError', {
+        input: input,
+        init: init,
+        error: error
+      });
+      throw error;
     }
 
+    const fetchResponse = new FetchResponse(response);
+    fetchResponse.data = uint8Array;
+
     this.events?.emit('onDone', {
-      data: uint8Array
+      input: input,
+      init: init,
+      response: fetchResponse
     });
 
-    return uint8Array;
+    return fetchResponse;
   }
 
-  async getResponseContentWithKnownContentLength(response: Response, contentLength: number): Promise<Uint8Array | null> {
+  async getResponseContentWithKnownContentLength(response: RequiredFiltered<Response, "body">, contentLength: number, input: RequestInfo | URL, init?: RequestInit | undefined): Promise<Uint8Array | null> {
+    // TODO : same thing as RequiredFiltered but with null property
+    // Maybe use Zod
+    // It would need ZodType I think
     if (response.body === null) {
-      throw new Error('body of response is null');
+      const error = new Error('fetch response body is null');
+      this.events?.emit('onError', {
+        input: input,
+        init: init,
+        error: error
+      });
+      throw error;
     }
 
     let uint8Array: Uint8Array = new Uint8Array(contentLength);
@@ -126,6 +207,8 @@ export class FetchProgress {
         progress += chunk.length;
 
         me.events?.emit('onProgress', {
+          input: input,
+          init: init,
           contentLength: contentLength,
           currentProgress: progress,
           lastChunk: chunk,
@@ -145,7 +228,7 @@ export class FetchProgress {
     return uint8Array;
   }
 
-  async getResponseContentWithUnknownContentLength(response: Response): Promise<Uint8Array | null> {
+  async getResponseContentWithUnknownContentLength(response: Response, input: RequestInfo | URL, init?: RequestInit | undefined): Promise<Uint8Array | null> {
 
     if (response.body === null) {
       throw new Error('body of response is null');
@@ -173,6 +256,8 @@ export class FetchProgress {
         }
 
         me.events?.emit('onProgress', {
+          input: input,
+          init: init,
           contentLength: null,
           currentProgress: progress,
           lastChunk: chunk,

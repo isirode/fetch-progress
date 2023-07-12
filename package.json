@@ -1,11 +1,11 @@
 {
   "name": "fetch-progress",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "description": "This is a library allowing to follow the progress of a fetch request.",
   "main": "dist/main.js",
   "scripts": {
     "doInstall": "npm install",
-    "test": "npm run wdio",
+    "spec": "npm run wdio",
     "wdio": "wdio run ./wdio.conf.ts",
     "start": "parcel --no-cache",
     "prebuild": "rimraf dist",
