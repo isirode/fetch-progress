@@ -1,8 +1,10 @@
 {
   "name": "fetch-progress",
-  "version": "1.2.0",
+  "version": "1.2.1",
   "description": "This is a library allowing to follow the progress of a fetch request.",
   "main": "dist/main.js",
+  "source": "src/index.ts",
+  "types": "dist/types.d.ts",
   "scripts": {
     "doInstall": "npm install",
     "spec": "npm run wdio",
@@ -16,10 +18,9 @@
   },
   "author": "Isirode",
   "license": "SEE LICENSE IN COPYING",
-  "source": "src/index.ts",
-  "types": "dist/types.d.ts",
   "files": [
     "dist/*.js",
+    "dist/*.ts",
     "dist/*.map",
     "src/"
   ],
